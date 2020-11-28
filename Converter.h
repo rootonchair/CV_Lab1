@@ -25,14 +25,20 @@ class Converter
 		if (sourceImage.channels() != 3)
 			return 1;
 
+		int srcWidthStep = sourceImage.step[0];
+		int srcChannels = sourceImage.step[1];
+
 		destinationImage = cv::Mat(sourceImage.rows, sourceImage.cols, CV_8UC1);
+		int dstWidthStep = destinationImage.step[0];
+		int dstChannel = destinationImage.step[1];
 
 		for (int row = 0; row < sourceImage.rows; row++) 
 		{
 			for (int col = 0; col < sourceImage.cols; col++) 
 			{
-				cv::Vec3b currentPixel = sourceImage.at<cv::Vec3b>(row, col);
-				destinationImage.at<uchar>(row, col) = 0.299*currentPixel[R] + 0.587*currentPixel[G] + 0.114*currentPixel[B];
+				uchar* currentPixel = sourceImage.data + srcWidthStep * row + srcChannels * col;
+				uchar* dstPixel = destinationImage.data + dstWidthStep * row + dstChannel * col;
+				(*dstPixel) = 0.299*currentPixel[R] + 0.587*currentPixel[G] + 0.114*currentPixel[B];
 			}
 		}
 		return 0;
@@ -56,10 +62,11 @@ class Converter
 		{
 			for (int col = 0; col < sourceImage.cols; col++) 
 			{
-				uchar currentPixel = sourceImage.at<uchar>(row, col);
-				destinationImage.at<cv::Vec3b>(row, col)[R] = currentPixel;
-				destinationImage.at<cv::Vec3b>(row, col)[G] = currentPixel;
-				destinationImage.at<cv::Vec3b>(row, col)[B] = currentPixel;
+				uchar currentPixel = sourceImage.ptr<uchar>(row)[col];
+				uchar* dstPixel = destinationImage.ptr<uchar>(row) + col * destinationImage.channels();
+				dstPixel[R] = currentPixel;
+				dstPixel[G] = currentPixel;
+				dstPixel[B] = currentPixel;
 			}
 		}
 
@@ -97,7 +104,7 @@ class Converter
 		{
 			for (int col = 0; col < sourceImage.cols; col++) 
 			{
-				cv::Vec3b currentPixel = sourceImage.at<cv::Vec3b>(row, col);
+				const uchar* currentPixel = sourceImage.ptr<uchar>(row) + col * sourceImage.channels();
 				double h, s, v;
 
 				double r_scaled = currentPixel[R] / 255.0;
@@ -140,9 +147,10 @@ class Converter
 					h /= 2.0;
 				}
 
-				destinationImage.at<cv::Vec3b>(row, col)[H] = (uchar)h;
-				destinationImage.at<cv::Vec3b>(row, col)[S] = (uchar)s;
-				destinationImage.at<cv::Vec3b>(row, col)[V] = (uchar)v;
+				uchar* dstPixel = destinationImage.ptr<uchar>(row) + col * destinationImage.channels();
+				dstPixel[H] = (uchar)h;
+				dstPixel[S] = (uchar)s;
+				dstPixel[V] = (uchar)v;
 
 			}
 		}
@@ -160,7 +168,9 @@ class Converter
 	0: nếu chuyển thành công
 	1: nếu chuyển thất bại (không đọc được ảnh input,...)
 	*/
-	int HSV2RGB(const cv::Mat& sourceImage, cv::Mat& destinationImage);
+	int HSV2RGB(const cv::Mat& sourceImage, cv::Mat& destinationImage) {
+		return 1;
+	}
 	
 	
 	
