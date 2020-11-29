@@ -117,7 +117,115 @@ public:
 		1: Nếu thành công vẽ được histogram
 		0: Nếu không vẽ được histogram
 	*/
-	int HistogramEqualization(const cv::Mat& sourceImage, cv::Mat& destinationImage);
+	int HistogramEqualization(const cv::Mat& sourceImage, cv::Mat& destinationImage)
+	{
+		if (sourceImage.empty())
+		{
+			return 0;
+		}
+
+		int channel, height, width, row, col, i;
+		channel = sourceImage.channels();
+		height = sourceImage.rows;
+		width = sourceImage.cols;		
+
+		if (channel > 1) // anh RGB
+		{			
+			Mat imgB(sourceImage.size(), CV_8UC1);
+			Mat imgG(sourceImage.size(), CV_8UC1);
+			Mat imgR(sourceImage.size(), CV_8UC1);
+
+			destinationImage = sourceImage.clone();
+			int srcChannels = sourceImage.channels();
+			int dstChannels = destinationImage.channels();
+			int imgChannels = imgB.channels();
+
+			//truy xuat den tung kenh mau
+			for (row = 0; row < height; row++)
+			{
+				const uchar* pSrcRow = sourceImage.ptr<uchar>(row);
+				uchar* pImgBRow = imgB.ptr<uchar>(row);
+				uchar* pImgRRow = imgR.ptr<uchar>(row);
+				uchar* pImgGRow = imgG.ptr<uchar>(row);
+
+				for (col = 0; col < width; col++, pSrcRow += srcChannels, pImgBRow += imgChannels, pImgGRow += imgChannels, pImgRRow += imgChannels)
+				{
+					pImgBRow[0] = pSrcRow[0];
+					pImgGRow[0] = pSrcRow[1];
+					pImgRRow[0] = pSrcRow[2];
+				}
+			}
+			//can bang histogram cho tung kenh mau
+			HistogramEqualization(imgB, imgB);
+			HistogramEqualization(imgG, imgG);
+			HistogramEqualization(imgR, imgR);
+
+			//gan lai gia tri cho anh dich
+			for (row = 0; row < height; row++)
+			{
+				uchar* pDstRow = destinationImage.ptr<uchar>(row);
+				uchar* pImgBRow = imgB.ptr<uchar>(row);
+				uchar* pImgRRow = imgR.ptr<uchar>(row);
+				uchar* pImgGRow = imgG.ptr<uchar>(row);
+
+				for (col = 0; col < width; col++, pDstRow += srcChannels, pImgBRow += imgChannels, pImgGRow += imgChannels, pImgRRow += imgChannels)
+				{
+
+					pDstRow[0] = pImgBRow[0];
+					pDstRow[1] = pImgGRow[0];
+					pDstRow[2] = pImgRRow[0];
+				}
+			}
+		}
+			
+		else // anh xam
+		{				
+			vector<int> hist_Arr(256, 0);
+			int srcChannels = sourceImage.channels();
+			int dstChannels = destinationImage.channels();
+
+			//tinh so luong diem anh cua tung do sang
+			for (row = 0; row < height; row++)
+			{
+				const uchar* pSrcRow = sourceImage.ptr<uchar>(row);
+				for (col = 0; col < width; col++, pSrcRow += srcChannels)
+				{
+					hist_Arr[pSrcRow[0]] += 1;
+				}
+			}
+
+			//tinh tong so diem anh tu 0 den k
+			vector<int> sum_of_hist(256);
+			sum_of_hist[0] = hist_Arr[0];
+
+			for (i = 1; i < 256; i++)
+			{
+				sum_of_hist[i] = sum_of_hist[i - 1] + hist_Arr[i];
+			}
+
+			// Tinh do sang moi cho tung do sang
+			double average = (double)255 / (height * width);
+			for (i = 0; i < 256; i++)
+			{
+				sum_of_hist[i] = round(average * sum_of_hist[i]);
+			}
+
+			//Gan vao anh dich
+			destinationImage = sourceImage.clone();
+
+			for (row = 0; row < height; row++)
+			{
+				const uchar* pSrcRow = sourceImage.ptr<uchar>(row);
+				uchar* pDstRow = destinationImage.ptr<uchar>(row);
+				for (col = 0; col < width; col++, pSrcRow += srcChannels, pDstRow += srcChannels)
+				{
+					pDstRow[0] = saturate_cast<uchar>(sum_of_hist[pSrcRow[0]]);
+				}
+			}
+		}
+
+		return 1;	
+	}
 	
 
 
