@@ -121,8 +121,8 @@ public:
 	
 
 
-		/*
-	Hàm cân bằng lược đồ màu tổng quát cho ảnh bất kỳ
+	/*
+	Hàm vẽ lược đồ màu cho ảnh bất kỳ
 	Tham so :
 		histMatrix : ma trận histogram đã tính được
 		histImage : ảnh histogram được vẽ
@@ -130,7 +130,54 @@ public:
 		1: Nếu thành công vẽ được histogram
 		0: Nếu không vẽ được histogram
 	*/
-	int DrawHistogram(const cv::Mat& histMatrix, cv::Mat& histImage);
+	int DrawHistogram(const cv::Mat& histMatrix, cv::Mat& histImage)
+	{
+		const int hWidth = 256;
+		const int hHeight = 256;
+		const int spaceFromTop = 64;
+
+		// Khởi tạo ảnh histogram
+		histImage = cv::Mat(hHeight, hWidth * histMatrix.rows, CV_8UC3);
+		for (int i = 0; i < histImage.rows; ++i)
+		{
+			uchar* arr = histImage.ptr<uchar>(i);
+			for (int j = 0; j < histImage.cols * histImage.channels(); ++j)
+				arr[j] = 0;
+		}
+
+		// Vẽ từng channel của histogram
+		if (histMatrix.rows == 1) // Ảnh greyscale
+		{
+			const uint* hist_1C = histMatrix.ptr<uint>(0);
+			int window[] = { spaceFromTop, 0, hHeight - 1, hWidth - 1 };
+			if (!DrawHistogram_1C(hist_1C, cv::Scalar(255, 255, 255), histImage, window))
+				return 0;
+		}
+		else if (histMatrix.rows == 3) // Ảnh RGB
+		{
+			// Vẽ kênh B
+			const uint* hist_1C = histMatrix.ptr<uint>(0);
+			int windowB[] = { spaceFromTop, 0, hHeight - 1, hWidth - 1 };
+			if (!DrawHistogram_1C(hist_1C, cv::Scalar(255, 0, 0), histImage, windowB))
+				return 0;
+
+			// Vẽ kênh G
+			hist_1C = histMatrix.ptr<uint>(1);
+			int windowG[] = { spaceFromTop, hWidth, hHeight - 1, 2 * hWidth - 1 };
+			if (!DrawHistogram_1C(hist_1C, cv::Scalar(0, 255, 0), histImage, windowG))
+				return 0;
+
+			// Vẽ kênh R
+			hist_1C = histMatrix.ptr<uint>(2);
+			int windowR[] = { spaceFromTop, 2 * hWidth, hHeight - 1, 3 * hWidth - 1 };
+			if (!DrawHistogram_1C(hist_1C, cv::Scalar(0, 0, 255), histImage, windowR))
+				return 0;
+		}
+		else
+			return 0;
+
+		return 1;
+	}
 
 	
 	/*
@@ -152,6 +199,48 @@ public:
 	~ColorTransformer() 
 	{
 
+	}
+
+private:
+
+	/*
+	Hàm vẽ lược đồ màu cho 1 kênh màu của ảnh
+	Tham so :
+		hist : mảng histogram của kênh màu
+		color: màu của histogram
+		histImage : ảnh histogram được vẽ
+		window: tọa độ cửa sổ của để vẽ lên histImage
+	Hàm trả về:
+		1: Nếu thành công vẽ được histogram
+		0: Nếu không vẽ được histogram
+	*/
+	int DrawHistogram_1C(const uint* hist, cv::Scalar color, cv::Mat& histImage, int window[4])
+	{
+		using namespace cv;
+
+		// Tìm giá trị max của histogram
+		int maxVal = 0;
+		for (int i = 0; i < 256; ++i)
+			if (maxVal < hist[i])
+				maxVal = hist[i];
+
+		// cân chỉnh lại histogram cho vừa với chiều cao window
+		double scaleVal = (window[2] - window[0] + 1) / (double)maxVal;
+		int scaled_hist[256];
+		for (int i = 0; i < 256; ++i)
+			scaled_hist[i] = (int)(hist[i] * scaleVal);
+
+		// Vẽ histogram
+		for (int i = window[1]; i <= window[3]; ++i)
+		{
+			int val = (double)(i - window[1]) / (window[3] - window[1] + 1) * 256;
+			cv::rectangle(histImage,
+				Rect(i, window[2] - scaled_hist[val] + 1, 1, scaled_hist[val]),
+				color,
+				FILLED);
+		}
+
+		return 1;
 	}
 };
 
