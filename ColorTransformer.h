@@ -106,7 +106,47 @@ public:
 		1: Nếu thành công thì trả về matrix kết quả (ảnh gốc vẫn giữ nguyên giá trị)
 		0: Nếu không tính được histogram hoặc ảnh input không tồn tại
 	*/
-	int CalcHistogram(const cv::Mat& sourceImage, cv::Mat& histMatrix);
+	int CalcHistogram(const cv::Mat& sourceImage, cv::Mat& histMatrix)
+	{
+		if (sourceImage.data == NULL)
+		{
+			return 0;
+		}
+		// nChannels=1 nếu là ảnh xám, nChannels=3 nếu là ảnh màu
+		int nChannels = sourceImage.channels();
+		// Khởi tạo ma trận histogram (nChannel x 256), giá trị mặc định là 0
+		histMatrix = Mat(nChannels, 256, CV_32SC1, Scalar(0));
+		// duyệt qua các dòng pixel của ảnh sourceImage
+		for (int i = 0; i < sourceImage.rows; i++)
+		{
+			// lấy con trỏ đầu dòng của sourceImage
+			const uchar* RowData = sourceImage.ptr<uchar>(i);
+
+			for (int j = 0; j < sourceImage.cols; j++, RowData += nChannels)
+			{
+				for (int n = 0; n < nChannels; n++)
+				{
+					// lấy con trỏ đầu dòng (từng kênh màu) của histMatrix
+					uint* hist_1n = histMatrix.ptr<uint>(n);
+					hist_1n[RowData[n]]++;
+				}
+			}
+		}
+		//Xuất histMatrix
+		for (int i = 0; i < histMatrix.rows; i++)
+		{
+			uint* RowData = histMatrix.ptr<uint>(i);
+			cout << "[ row = " << i << "] \n";
+			for (int j = 0; j < histMatrix.cols; j++)
+			{
+
+				cout << "[" << i << ":" << j << "]: " << RowData[j] << "\n";
+			}
+			cout << endl;
+		}
+		return 1;
+		
+	}
 	
 	/*
 	Hàm cân bằng lược đồ màu tổng quát cho ảnh bất kỳ
