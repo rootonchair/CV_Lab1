@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
 
 			short b = (short)ParseInt(argv[3]);
 
-			orgImage = imread(inputPath, CV_LOAD_IMAGE_COLOR);
+			orgImage = imread(inputPath, IMREAD_ANYCOLOR);
 			ColorTransformer cTrans;
 			result = cTrans.ChangeBrighness(orgImage, resultImage, b);
 		}
@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
 
 			float c = (float)ParseDouble(argv[3]);
 
-			orgImage = imread(inputPath, CV_LOAD_IMAGE_COLOR);
+			orgImage = imread(inputPath, IMREAD_ANYCOLOR);
 			ColorTransformer cTrans;
 			result = cTrans.ChangeContrast(orgImage, resultImage, c);
 		}
@@ -74,20 +74,14 @@ int main(int argc, char* argv[])
 		}
 		else if (strcmp(command, "--equalhist") == 0)
 		{
-			if (argc > 3 && strcmp(argv[3], "-g") == 0)
-				orgImage = imread(inputPath, CV_LOAD_IMAGE_GRAYSCALE);
-			else
-				orgImage = imread(inputPath, CV_LOAD_IMAGE_COLOR);
+			orgImage = imread(inputPath, IMREAD_ANYCOLOR);
 
 			ColorTransformer cTrans;
 			cTrans.HistogramEqualization(orgImage, resultImage);
 		}
 		else if (strcmp(command, "--drawhist") == 0)
 		{
-			if (argc > 3 && strcmp(argv[3], "-g") == 0)
-				orgImage = imread(inputPath, CV_LOAD_IMAGE_GRAYSCALE);
-			else
-				orgImage = imread(inputPath, CV_LOAD_IMAGE_COLOR);
+			orgImage = imread(inputPath, IMREAD_ANYCOLOR);
 
 			ColorTransformer cTrans;
 			Mat hist;
