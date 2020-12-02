@@ -2,6 +2,9 @@
 #include "opencv2/opencv.hpp"
 #include "opencv2/highgui.hpp"
 
+using namespace std;
+using namespace cv;
+
 class ColorTransformer
 {
 public:
@@ -17,6 +20,10 @@ public:
 	*/
 	int ChangeBrighness(const cv::Mat& sourceImage, cv::Mat& destinationImage, short b) 
 	{
+		if (sourceImage.data == NULL)
+		{
+			return 0;
+		}
 
 		if (sourceImage.channels() == 3)  // rgb image
 			destinationImage = cv::Mat(sourceImage.rows, sourceImage.cols, CV_8UC3);
@@ -62,7 +69,10 @@ public:
 	*/	
 	int ChangeContrast(const cv::Mat& sourceImage, cv::Mat& destinationImage, float c) 
 	{
-
+		if (sourceImage.data == NULL)
+		{
+			return 0;
+		}
 
 		if (sourceImage.channels() == 3)  // rgb image
 			destinationImage = cv::Mat(sourceImage.rows, sourceImage.cols, CV_8UC3);
@@ -131,18 +141,6 @@ public:
 					hist_1n[RowData[n]]++;
 				}
 			}
-		}
-		//Xuất histMatrix
-		for (int i = 0; i < histMatrix.rows; i++)
-		{
-			uint* RowData = histMatrix.ptr<uint>(i);
-			cout << "[ row = " << i << "] \n";
-			for (int j = 0; j < histMatrix.cols; j++)
-			{
-
-				cout << "[" << i << ":" << j << "]: " << RowData[j] << "\n";
-			}
-			cout << endl;
 		}
 		return 1;
 		
