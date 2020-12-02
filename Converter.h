@@ -1,17 +1,38 @@
 ﻿#pragma once
-#include "opencv2/opencv.hpp"
-#include "opencv2/highgui.hpp"
-
 #define R 2
 #define G 1
 #define B 0
 #define H 0
 #define S 1
 #define V 2
+#include "opencv2/opencv.hpp"
+#include <math.h>
+#include "opencv2/highgui.hpp"
+using namespace std;
 
-
+double max(double a, double b)
+{
+	if (a > b)
+		return a;
+	return b;
+}
+double min(double a, double b)
+{
+	if (a < b)
+		return a;
+	return b;
+}
+void SetValuePixel(cv::Mat& img, int row, int col, int color, int data)
+{
+	img.data[row * img.channels() * img.cols + col * img.channels() + color] = data;
+}
+int GetPixelValue(cv::Mat img, int row, int col, int color)
+{
+	return img.data[row * img.channels() * img.cols + col*img.channels() + color];
+}
 class Converter
 {
+public:
 	/*
 	Hàm chuyển đổi không gian màu của ảnh từ RGB sang GrayScale
 	sourceImage: ảnh input
@@ -20,27 +41,21 @@ class Converter
 	0: nếu chuyển thành công
 	1: nếu chuyển thất bại (không đọc được ảnh input,...)
 	*/
-	int RGB2GrayScale(const cv::Mat& sourceImage, cv::Mat& destinationImage) 
+	int RGB2GrayScale(const cv::Mat& sourceImage, cv::Mat& destinationImage)
 	{
 		if (sourceImage.channels() != 3)
 			return 1;
 
-		int srcWidthStep = sourceImage.step[0];
-		int srcChannels = sourceImage.step[1];
-
 		destinationImage = cv::Mat(sourceImage.rows, sourceImage.cols, CV_8UC1);
-		int dstWidthStep = destinationImage.step[0];
-		int dstChannel = destinationImage.step[1];
-
-		for (int row = 0; row < sourceImage.rows; row++) 
-		{
-			for (int col = 0; col < sourceImage.cols; col++) 
+		
+		//(*dstPixel) = 0.299*currentPixel[R] + 0.587*currentPixel[G] + 0.114*currentPixel[B];
+		for (int row= 0; row < sourceImage.rows; row++)
+			for (int col = 0; col < sourceImage.cols; col++)
 			{
-				uchar* currentPixel = sourceImage.data + srcWidthStep * row + srcChannels * col;
-				uchar* dstPixel = destinationImage.data + dstWidthStep * row + dstChannel * col;
-				(*dstPixel) = 0.299*currentPixel[R] + 0.587*currentPixel[G] + 0.114*currentPixel[B];
+				int grayColor = 0.299 * GetPixelValue(sourceImage, row, col, R) + 0.558 * GetPixelValue(sourceImage, row, col, G) + 0.114 * GetPixelValue(sourceImage, row, col, B);
+				SetValuePixel(destinationImage, row, col, 0, grayColor);
 			}
-		}
+		
 		return 0;
 	}
 
@@ -62,11 +77,10 @@ class Converter
 		{
 			for (int col = 0; col < sourceImage.cols; col++) 
 			{
-				uchar currentPixel = sourceImage.ptr<uchar>(row)[col];
-				uchar* dstPixel = destinationImage.ptr<uchar>(row) + col * destinationImage.channels();
-				dstPixel[R] = currentPixel;
-				dstPixel[G] = currentPixel;
-				dstPixel[B] = currentPixel;
+				uchar currentPixel = GetPixelValue(sourceImage, row, col, 0);
+				SetValuePixel(destinationImage, row, col, R, currentPixel);
+				SetValuePixel(destinationImage, row, col, G, currentPixel);
+				SetValuePixel(destinationImage, row, col, B, currentPixel);
 			}
 		}
 
@@ -87,7 +101,7 @@ class Converter
 
 	/*
 	Hàm chuyển đổi không gian màu của ảnh từ RGB sang HSV
-	sourceImage: ảnh input
+	sourceImage: ảnh input	
 	destinationImage: ảnh output
 	Hàm trả về
 	0: nếu chuyển thành công
@@ -104,7 +118,7 @@ class Converter
 		{
 			for (int col = 0; col < sourceImage.cols; col++) 
 			{
-				const uchar* currentPixel = sourceImage.ptr<uchar>(row) + col * sourceImage.channels();
+				cv::Vec3b currentPixel = sourceImage.at<cv::Vec3b>(row, col);
 				double h, s, v;
 
 				double r_scaled = currentPixel[R] / 255.0;
@@ -147,10 +161,13 @@ class Converter
 					h /= 2.0;
 				}
 
-				uchar* dstPixel = destinationImage.ptr<uchar>(row) + col * destinationImage.channels();
-				dstPixel[H] = (uchar)h;
-				dstPixel[S] = (uchar)s;
-				dstPixel[V] = (uchar)v;
+				//destinationImage.at<cv::Vec3b>(row, col)[H] = (uchar)h;
+				SetValuePixel(destinationImage, row, col, H, h);
+				SetValuePixel(destinationImage, row, col, S, s);
+				SetValuePixel(destinationImage, row, col, V, v);
+				//cout << h << " " << s << " " << v << endl;
+				///destinationImage.at<cv::Vec3b>(row, col)[S] = (uchar)s;
+				//destinationImage.at<cv::Vec3b>(row, col)[V] = (uchar)v;
 
 			}
 		}
@@ -168,12 +185,67 @@ class Converter
 	0: nếu chuyển thành công
 	1: nếu chuyển thất bại (không đọc được ảnh input,...)
 	*/
-	int HSV2RGB(const cv::Mat& sourceImage, cv::Mat& destinationImage) {
-		return 1;
+	int HSV2RGB(const cv::Mat& sourceImage, cv::Mat& destinationImage)
+	{
+		if (sourceImage.channels() != 3)
+			return 1;
+
+		destinationImage = cv::Mat(sourceImage.rows, sourceImage.cols, CV_8UC3);
+
+		for (int row = 0; row < sourceImage.rows; row++)
+			for (int col = 0; col < sourceImage.cols; col++)
+			{
+				double r, g, b;
+				double h, s, v;
+				h = max(0, min(255, GetPixelValue(sourceImage, row, col, H))) * 2.0;
+				s = max(0, min(255, GetPixelValue(sourceImage, row, col, S))) / 255.0;
+				v = max(0, min(255, GetPixelValue(sourceImage, row, col, V))) / 255.0;
+				//cout << h << " " << s << " " << v << endl;
+				int hi = int(h / 60) % 6;
+				double f = h / 60 - hi;
+				double p = v * (1 - s);
+				double q = v * (1 - f * s);
+				double t = v * (1 - s + s * f);
+				switch (hi) 
+				{
+				case 0:
+					r = v;
+					g = t;
+					b = p;
+					break;
+				case 1:
+					r = q;
+					g = v; 
+					b = p;
+					break;
+				case 2:
+					r = p;
+					g = v;
+					b = t;
+					break;
+				case 3:
+					r = q;
+					g = q;
+					b = v;
+					break;
+				case 4: 
+					r = t;
+					g = p;
+					b = v;
+					break;
+				default:
+					r = v;
+					g = p;
+					b = q;
+					break;
+				}
+
+				SetValuePixel(destinationImage, row, col, R, int(r / 2)) ;
+				SetValuePixel(destinationImage, row, col, G, int(g*255));
+				SetValuePixel(destinationImage, row, col, B, int(b*255));
+			}
+		return 0;
 	}
-	
-	
-	
 public:
 	/*
 	Hàm chuyển đổi không gian màu của ảnh
@@ -188,6 +260,9 @@ public:
 	*/
 	int Convert(cv::Mat& sourceImage, cv::Mat& destinationImage, int type) 
 	{
+		if (sourceImage.data == NULL)
+			return 1;
+
 		switch (type)
 		{
 		case 0:
