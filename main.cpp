@@ -74,11 +74,25 @@ int main(int argc, char* argv[])
 		}
 		else if (strcmp(command, "--equalhist") == 0)
 		{
+			if (argc > 3 && strcmp(argv[3], "-g") == 0)
+				orgImage = imread(inputPath, CV_LOAD_IMAGE_GRAYSCALE);
+			else
+				orgImage = imread(inputPath, CV_LOAD_IMAGE_COLOR);
 
+			ColorTransformer cTrans;
+			cTrans.HistogramEqualization(orgImage, resultImage);
 		}
 		else if (strcmp(command, "--drawhist") == 0)
 		{
+			if (argc > 3 && strcmp(argv[3], "-g") == 0)
+				orgImage = imread(inputPath, CV_LOAD_IMAGE_GRAYSCALE);
+			else
+				orgImage = imread(inputPath, CV_LOAD_IMAGE_COLOR);
 
+			ColorTransformer cTrans;
+			Mat hist;
+			cTrans.CalcHistogram(orgImage, hist);
+			cTrans.DrawHistogram(hist, resultImage);
 		}
 		else if (strcmp(command, "--compare") == 0)
 		{
