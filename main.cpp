@@ -20,31 +20,39 @@ int main(int argc, char* argv[])
 
 		Mat orgImage;
 		Mat resultImage;
-		int result;
+		bool result = false;
 
 		if (strcmp(command, "--rgb2gray") == 0)
 		{
 			orgImage = imread(inputPath, CV_LOAD_IMAGE_COLOR);
 			Converter converter;
-			result = converter.Convert(orgImage, resultImage, 0);
+			if (converter.Convert(orgImage, resultImage, 0) == 0)
+				result = true;
 		}
 		else if (strcmp(command, "--gray2rgb") == 0)
 		{
 			orgImage = imread(inputPath, CV_LOAD_IMAGE_GRAYSCALE);
 			Converter converter;
-			result = converter.Convert(orgImage, resultImage, 1);
+			if (converter.Convert(orgImage, resultImage, 1) == 0)
+				result = true;
 		}
 		else if (strcmp(command, "--rgb2hsv") == 0)
 		{
 			orgImage = imread(inputPath, CV_LOAD_IMAGE_COLOR);
 			Converter converter;
-			result = converter.Convert(orgImage, resultImage, 2);
+			if (converter.Convert(orgImage, resultImage, 2) == 0)
+				result = true;
 		}
-		else if (strcmp(command, "--hsv2rgb") == 0) // !!!
+		else if (strcmp(command, "--hsv2rgb") == 0)
 		{
-			orgImage = imread(inputPath, COLOR_RGB2HSV);
+			Mat rgbIm;
+			rgbIm = imread(inputPath, CV_LOAD_IMAGE_COLOR);
+			if (rgbIm.data != NULL)
+				cvtColor(rgbIm, orgImage, COLOR_BGR2HSV);
+
 			Converter converter;
-			result = converter.Convert(orgImage, resultImage, 3);
+			if (converter.Convert(orgImage, resultImage, 3) == 0)
+				result = true;
 		}
 		else if (strcmp(command, "--bright") == 0)
 		{
@@ -55,7 +63,8 @@ int main(int argc, char* argv[])
 
 			orgImage = imread(inputPath, IMREAD_ANYCOLOR);
 			ColorTransformer cTrans;
-			result = cTrans.ChangeBrighness(orgImage, resultImage, b);
+			if (cTrans.ChangeBrighness(orgImage, resultImage, b) == 1)
+				result = true;
 		}
 		else if (strcmp(command, "--contrast") == 0)
 		{
@@ -66,18 +75,36 @@ int main(int argc, char* argv[])
 
 			orgImage = imread(inputPath, IMREAD_ANYCOLOR);
 			ColorTransformer cTrans;
-			result = cTrans.ChangeContrast(orgImage, resultImage, c);
+			if (cTrans.ChangeContrast(orgImage, resultImage, c) == 1)
+				result = true;
 		}
 		else if (strcmp(command, "--hist") == 0)
 		{
+			orgImage = imread(inputPath, IMREAD_ANYCOLOR);
+			
+			ColorTransformer cTrans;
+			Mat hist;
+			if (cTrans.CalcHistogram(orgImage, hist) == 1)
+				result = true;
 
+			for (int i = 0; i < hist.rows; i++)
+			{
+				uint* RowData = hist.ptr<uint>(i);
+				std::cout << "[ row = " << i << "] \n";
+				for (int j = 0; j < hist.cols; j++)
+				{
+					std::cout << "[" << i << ":" << j << "]: " << RowData[j] << "\n";
+				}
+				std::cout << std::endl;
+			}
 		}
 		else if (strcmp(command, "--equalhist") == 0)
 		{
 			orgImage = imread(inputPath, IMREAD_ANYCOLOR);
 
 			ColorTransformer cTrans;
-			cTrans.HistogramEqualization(orgImage, resultImage);
+			if (cTrans.HistogramEqualization(orgImage, resultImage) == 1)
+				result = true;
 		}
 		else if (strcmp(command, "--drawhist") == 0)
 		{
@@ -85,26 +112,33 @@ int main(int argc, char* argv[])
 
 			ColorTransformer cTrans;
 			Mat hist;
-			cTrans.CalcHistogram(orgImage, hist);
-			cTrans.DrawHistogram(hist, resultImage);
+			if (cTrans.CalcHistogram(orgImage, hist) == 1)
+				result = true;
+			if (result && cTrans.DrawHistogram(hist, resultImage) == 1)
+				result = true;
+			else
+				result = false;
 		}
 		else if (strcmp(command, "--compare") == 0)
 		{
-
+			throw std::string("This feature is under maintenance");
 		}
 		else
 		{
 			throw std::string("No such command ") + command;
 		}
 
-		//if (result != 0) {
-		//	throw std::string("Cannot perform operation. Maybe due to unexisted image or invalid command arguments");
-		//}
+		if (!result) {
+			throw std::string("Cannot perform operation. Maybe due to unexisted image or invalid command arguments");
+		}
 
 		namedWindow("Original Image");
 		imshow("Original Image", orgImage);
-		namedWindow("Result");
-		imshow("Result", resultImage);
+		if (resultImage.data != NULL)
+		{
+			namedWindow("Result");
+			imshow("Result", resultImage);
+		}
 		waitKey(0);
 	}
 	catch (std::string errMsg) {
