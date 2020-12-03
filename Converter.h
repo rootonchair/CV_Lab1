@@ -1,13 +1,14 @@
 ﻿#pragma once
+#include "opencv2/opencv.hpp"
+#include <math.h>
+#include "opencv2/highgui.hpp"
+
 #define R 2
 #define G 1
 #define B 0
 #define H 0
 #define S 1
 #define V 2
-#include "opencv2/opencv.hpp"
-#include <math.h>
-#include "opencv2/highgui.hpp"
 using namespace std;
 
 double max(double a, double b)

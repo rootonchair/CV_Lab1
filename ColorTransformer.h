@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "opencv2/opencv.hpp"
 #include "opencv2/highgui.hpp"
+#include"Converter.h"
 
 using namespace std;
 using namespace cv;
@@ -334,7 +335,104 @@ public:
 	Hàm trả về:
 		độ đo sự tương đồng giữa hai ảnh
 	*/
-	float CompareImage(const cv::Mat& image1, cv::Mat& image2);
+	float CompareImage(const cv::Mat& image1, cv::Mat& image2) 
+	{
+
+		//So sánh hai ảnh xám
+		if (image1.channels() == 1 && image2.channels() == 1)
+		{
+			vector<float> his1(256, 0), his2(256, 0);
+			//Tính Histogram của ảnh 1
+			for (int row = 0; row < image1.rows; row++)
+				for (int col = 0; col < image1.cols; col++)
+				{
+					his1[GetPixelValue(image1, row, col, 0)] += 1;
+				}
+
+			for (int i = 0; i < 256; i++)
+				his1[i] /= (1.0 * image1.rows * image1.cols);
+
+			//Tính Histogram của ảnh 2
+			for (int row = 0; row < image2.rows; row++)
+				for (int col = 0; col < image2.cols; col++)
+				{
+					his2[GetPixelValue(image2, row, col, 0)] += 1;
+				}
+
+			for (int i = 0; i < 256; i++)
+				his2[i] /= (1.0 * image2.rows * image2.cols);
+
+			//So Sánh hai histogram 
+			// Công thức sum(abs(his1[i] - his2[i]))
+			float percent_diff = 0.0;
+			for (int i = 0; i < 256; i++)
+			{
+				if (his1[i] == 0 && his2[i] == 0)
+					continue;
+				percent_diff = percent_diff + (his1[i] - his2[i])*(his1[i] - his2[i]) / (his1[i] + his2[i]);
+			}
+
+			return sqrtf(percent_diff);
+
+		}
+
+		//so sánh hai ảnh màu
+		if (image1.channels() == 3 && image2.channels() == 3)
+		{
+			vector<float> his1_R(256, 0), his2_R(256, 0), his1_G(256, 0), his2_G(256, 0), his1_B(256, 0), his2_B(256, 0);
+			//Tính Histogram của ảnh 1
+			for (int row = 0; row < image1.rows; row++)
+				for (int col = 0; col < image1.cols; col++)
+				{
+					his1_R[GetPixelValue(image1, row, col, R)] += 1;
+					his1_G[GetPixelValue(image1, row, col, G)] += 1;
+					his1_B[GetPixelValue(image1, row, col, B)] += 1;
+				}
+
+			for (int i = 0; i < 256; i++)
+			{
+				his1_R[i] /= (1.0 * image1.rows * image1.cols);
+				his1_G[i] /= (1.0 * image1.rows * image1.cols);
+				his1_B[i] /= (1.0 * image1.rows * image1.cols);
+			}
+			//Tính Histogram của ảnh 2
+			for (int row = 0; row < image2.rows; row++)
+				for (int col = 0; col < image2.cols; col++)
+				{
+					his2_R[GetPixelValue(image2, row, col, R)] += 1;
+					his2_G[GetPixelValue(image2, row, col, G)] += 1;
+					his2_B[GetPixelValue(image2, row, col, B)] += 1;
+				}
+
+			for (int i = 0; i < 256; i++)
+			{
+				his2_R[i] /= (1.0 * image1.rows * image1.cols);
+				his2_G[i] /= (1.0 * image1.rows * image1.cols);
+				his2_B[i] /= (1.0 * image1.rows * image1.cols);
+			}
+			//So Sánh hai histogram 
+			// Công thức sum(abs(his1[i] - his2[i]))
+			float percent_diff = 0.0;
+			for (int i = 0; i < 256; i++)
+			{
+				float r_diff = 0.0;
+				if (his1_R[i] != 0 || his2_R[i]!=0)
+					r_diff = (his1_R[i] - his2_R[i])*(his1_R[i] - his2_R[i]) / (his1_R[i] + his2_R[i]);
+
+				float g_diff = 0.0;
+				if (his1_G[i] != 0 || his2_G[i] != 0)
+					g_diff = (his1_G[i] - his2_G[i])*(his1_G[i] - his2_G[i]) / (his1_G[i] + his2_G[i]);
+
+				float b_diff = 0;
+				if (his1_B[i] != 0 || his2_B[i] != 0)
+					b_diff = (his1_B[i] - his2_B[i])*(his1_B[i] - his2_B[i]) / (his1_B[i] + his2_B[i]);
+				percent_diff = percent_diff + r_diff + g_diff + b_diff;
+			}
+
+			return sqrtf(percent_diff);
+		}
+		return 0;
+	}
 	
 	
 	ColorTransformer() 
